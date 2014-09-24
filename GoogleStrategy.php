@@ -76,30 +76,7 @@ class GoogleStrategy extends OpauthStrategy{
 			$results = json_decode($response);
 			
 			if (!empty($results) && !empty($results->access_token)){
-				$userinfo = $this->userinfo($results->access_token);
-				
-				$this->auth = array(
-					'uid' => $userinfo['id'],
-					'info' => array(),
-					'credentials' => array(
-						'token' => $results->access_token,
-						'expires' => date('c', time() + $results->expires_in)
-					),
-					'raw' => $userinfo
-				);
-
-				if (!empty($results->refresh_token))
-				{
-					$this->auth['credentials']['refresh_token'] = $results->refresh_token;
-				}
-				
-				$this->mapProfile($userinfo, 'name', 'info.name');
-				$this->mapProfile($userinfo, 'email', 'info.email');
-				$this->mapProfile($userinfo, 'given_name', 'info.first_name');
-				$this->mapProfile($userinfo, 'family_name', 'info.last_name');
-				$this->mapProfile($userinfo, 'picture', 'info.image');
-				
-				$this->callback();
+                $this->processToken($results->access_token, $results->access_token, isset($results->refresh_token) ? $results->refresh_token : null);
 			}
 			else{
 				$error = array(
@@ -123,7 +100,34 @@ class GoogleStrategy extends OpauthStrategy{
 			$this->errorCallback($error);
 		}
 	}
-	
+
+    public function processToken($accessToken, $tokenExpires = null, $refreshToken = null) {
+        $userinfo = $this->userinfo($accessToken);
+
+        $this->auth = array(
+            'uid' => $userinfo['id'],
+            'info' => array(),
+            'credentials' => array(
+                'token' => $accessToken,
+                'expires' => date('c', time() + $tokenExpires)
+            ),
+            'raw' => $userinfo
+        );
+
+        if (!empty($refreshToken))
+        {
+            $this->auth['credentials']['refresh_token'] = $refreshToken;
+        }
+
+        $this->mapProfile($userinfo, 'name', 'info.name');
+        $this->mapProfile($userinfo, 'email', 'info.email');
+        $this->mapProfile($userinfo, 'given_name', 'info.first_name');
+        $this->mapProfile($userinfo, 'family_name', 'info.last_name');
+        $this->mapProfile($userinfo, 'picture', 'info.image');
+
+        $this->callback();
+    }
+
 	/**
 	 * Queries Google API for user info
 	 *
